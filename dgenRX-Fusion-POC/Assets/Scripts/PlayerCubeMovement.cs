@@ -1,22 +1,24 @@
-using Fusion;
 using UnityEngine;
+using Fusion;
 
 public class PlayerCubeMovement : NetworkBehaviour
 {
-    public float speed = 5f;
+    private Vector3 _velocity;
+    private bool _isGrounded;
 
+    // FixedUpdateNetwork is the Fusion version of FixedUpdate
     public override void FixedUpdateNetwork()
     {
-        if (!HasStateAuthority)
-            return;
+        // ONLY move if this window has "Input Authority" (is the local player)
+        if (HasInputAuthority)
+        {
+            float x = Input.GetAxis("Horizontal");
+            float z = Input.GetAxis("Vertical");
 
-        Vector3 move = Vector3.zero;
-
-        if (Input.GetKey(KeyCode.W)) move += Vector3.forward;
-        if (Input.GetKey(KeyCode.S)) move += Vector3.back;
-        if (Input.GetKey(KeyCode.A)) move += Vector3.left;
-        if (Input.GetKey(KeyCode.D)) move += Vector3.right;
-
-        transform.position += move * speed * Runner.DeltaTime;
+            Vector3 move = new Vector3(x, 0, z) * Runner.DeltaTime * 5f;
+            
+            // Standard and most reliable way for NetworkTransform to sync in Fusion 2
+            transform.position += move;
+        }
     }
 }

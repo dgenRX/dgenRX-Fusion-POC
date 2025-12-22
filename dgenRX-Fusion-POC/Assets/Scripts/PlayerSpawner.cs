@@ -1,52 +1,45 @@
-using UnityEngine;
 using Fusion;
 using Fusion.Sockets;
+using UnityEngine;
 using System;
 using System.Collections.Generic;
-using UnityEngine.SceneManagement;
 
-public class FusionHostBootstrap : MonoBehaviour, INetworkRunnerCallbacks
+public class PlayerSpawner : MonoBehaviour, INetworkRunnerCallbacks
 {
-    // Changed to NetworkObject to allow standard Unity drag-and-drop assignment
-    public NetworkObject playerPrefab; 
-    private NetworkRunner _runner;
+    public NetworkPrefabRef PlayerPrefab;
 
-    async void Start()
+    public void OnEnable()
     {
-        _runner = gameObject.AddComponent<NetworkRunner>();
-        _runner.ProvideInput = true;
+        var runner = FindFirstObjectByType<NetworkRunner>();
+        if (runner != null) runner.AddCallbacks(this);
+    }
 
-        // Create the scene manager helper
-        var sceneManager = gameObject.AddComponent<NetworkSceneManagerDefault>();
-
-        await _runner.StartGame(new StartGameArgs()
-        {
-            GameMode = GameMode.AutoHostOrClient,
-            SessionName = "TestRoom", // Hardcoded room name so both builds find each other
-            Scene = SceneRef.FromIndex(SceneManager.GetActiveScene().buildIndex),
-            SceneManager = sceneManager
-        });
+    public void OnDisable()
+    {
+        var runner = FindFirstObjectByType<NetworkRunner>();
+        if (runner != null) runner.RemoveCallbacks(this);
     }
 
     public void OnPlayerJoined(NetworkRunner runner, PlayerRef player)
     {
-        // Only the Host (Server) is allowed to Spawn objects
-        if (runner.IsServer)
+        if (player == runner.LocalPlayer)
         {
-            Debug.Log($"Spawning player: {player}");
-            // Fusion 2.0 runner.Spawn accepts a NetworkObject reference directly
-            runner.Spawn(playerPrefab, new Vector3(0, 1, 0), Quaternion.identity, player);
+            runner.Spawn(PlayerPrefab, new Vector3(0, 1, 0), Quaternion.identity, player);
         }
     }
 
-    // --- Required Fusion 2.0 Callbacks (Boilerplate) ---
+    // --- REQUIRED PLACEHOLDERS FOR FUSION 2 ---
+    
     public void OnPlayerLeft(NetworkRunner runner, PlayerRef player) { }
     public void OnInput(NetworkRunner runner, NetworkInput input) { }
     public void OnInputMissing(NetworkRunner runner, PlayerRef player, NetworkInput input) { }
     public void OnShutdown(NetworkRunner runner, ShutdownReason shutdownReason) { }
     public void OnConnectedToServer(NetworkRunner runner) { }
     public void OnDisconnectedFromServer(NetworkRunner runner, NetDisconnectReason reason) { }
+
+    // This line is updated specifically to match your error message
     public void OnConnectRequest(NetworkRunner runner, NetworkRunnerCallbackArgs.ConnectRequest request, byte[] token) { }
+
     public void OnConnectFailed(NetworkRunner runner, NetAddress remoteAddress, NetConnectFailedReason reason) { }
     public void OnUserSimulationMessage(NetworkRunner runner, SimulationMessagePtr message) { }
     public void OnSessionListUpdated(NetworkRunner runner, List<SessionInfo> sessionList) { }

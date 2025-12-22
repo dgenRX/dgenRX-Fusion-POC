@@ -14,6 +14,8 @@ GameObject:
   - component: {fileID: 2286734460369814516}
   - component: {fileID: 4905365921185996634}
   - component: {fileID: -1634135183479937948}
+  - component: {fileID: -2427993571538106869}
+  - component: {fileID: 4802717463037934024}
   m_Layer: 0
   m_Name: PlayerCube
   m_TagString: Untagged
@@ -121,10 +123,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   SortKey: 1144614464
   ObjectInterest: 1
-  Flags: 262145
+  Flags: 786433
   NestedObjects: []
   NetworkedBehaviours:
   - {fileID: -1634135183479937948}
+  - {fileID: -2427993571538106869}
+  - {fileID: 4802717463037934024}
   ForceRemoteRenderTimeframe: 0
 --- !u!114 &-1634135183479937948
 MonoBehaviour:
@@ -138,4 +142,32 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: daab111bef4126343b83efdafc56a57d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  speed: 5
+--- !u!114 &-2427993571538106869
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7152904825852851385}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 158639473, guid: e725a070cec140c4caffb81624c8c787, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _stateAuthorityChangeErrorCorrectionDelta: 0
+  SyncScale: 0
+  SyncParent: 0
+  _autoAOIOverride: 1
+  DisableSharedModeInterpolation: 0
+--- !u!114 &4802717463037934024
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7152904825852851385}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 86798fbe62de45a4ebcfa2c346734135, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
