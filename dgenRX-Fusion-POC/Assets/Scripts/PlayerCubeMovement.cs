@@ -3,22 +3,18 @@ using Fusion;
 
 public class PlayerCubeMovement : NetworkBehaviour
 {
-    private Vector3 _velocity;
-    private bool _isGrounded;
+    [SerializeField] private float speed = 5f;
 
-    // FixedUpdateNetwork is the Fusion version of FixedUpdate
     public override void FixedUpdateNetwork()
     {
-        // ONLY move if this window has "Input Authority" (is the local player)
-        if (HasInputAuthority)
+        // GetInput retrieves the data we packed in GlobalManager.OnInput
+        if (GetInput<NetworkInputData>(out var input))
         {
-            float x = Input.GetAxis("Horizontal");
-            float z = Input.GetAxis("Vertical");
+            // Normalize the direction to prevent diagonal speed boost
+            Vector3 moveDirection = input.direction.normalized;
 
-            Vector3 move = new Vector3(x, 0, z) * Runner.DeltaTime * 5f;
-            
-            // Standard and most reliable way for NetworkTransform to sync in Fusion 2
-            transform.position += move;
+            // Apply movement using the Runner's DeltaTime for network-sync consistency
+            transform.Translate(moveDirection * speed * Runner.DeltaTime);
         }
     }
 }
