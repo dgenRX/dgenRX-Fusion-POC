@@ -1,61 +1,85 @@
-using System;
-using System.Collections.Generic;
 using Fusion;
 using Fusion.Sockets;
+using System;
+using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
-// The authoritative input structure
-public struct NetworkInputData : INetworkInput
+public class GlobalManager : NetworkBehaviour, INetworkRunnerCallbacks
 {
-    public Vector2 direction;
-}
+    public GameObject PlayerPrefab;
+    public GameObject NetworkLogicPrefab; 
+    
+    private NetworkRunner _localRunner;
+    private Rect _windowRect = new Rect(20, 20, 300, 150);
 
-public class GlobalManager : MonoBehaviour, INetworkRunnerCallbacks
-{
-    public GameObject playerPrefab;
+    [Networked] public bool DealRequested { get; set; }
 
-    async void StartGame(GameMode mode)
+    // Called by a UI Button in the scene
+    public void OnDealButtonClicked()
     {
-        GameObject runnerObj = new GameObject("Runner_" + mode.ToString());
-        NetworkRunner runner = runnerObj.AddComponent<NetworkRunner>();
+        if (_localRunner == null) return;
+        RPC_RequestDeal();
+    }
 
-        runnerObj.AddComponent<NetworkSceneManagerDefault>();
-        runnerObj.AddComponent<RunnerEnableVisibility>();
+    [Rpc(RpcSources.All, RpcTargets.StateAuthority)]
+    public void RPC_RequestDeal()
+    {
+        // This is executed on the Host when any client (or the host) calls it
+        Debug.Log("[Global] Deal Request Received by Host via RPC.");
+        DealRequested = true;
+    }
 
-        runner.AddCallbacks(this);
-        runner.ProvideInput = true;
-
-        int activeSceneIndex = SceneManager.GetActiveScene().buildIndex;
-        if (activeSceneIndex < 0) activeSceneIndex = 0; 
-
-        var sceneInfo = new NetworkSceneInfo();
-        var sceneRef = SceneRef.FromIndex(activeSceneIndex);
-        sceneInfo.AddSceneRef(sceneRef, LoadSceneMode.Single);
-
-        var result = await runner.StartGame(new StartGameArgs()
+    private void Update()
+    {
+        // Local input check for the Host only as a shortcut
+        if (Object != null && Object.HasStateAuthority)
         {
-            GameMode = mode,
-            SessionName = "MultiPeerTestRoom",
-            Scene = sceneInfo,
-            SceneManager = runner.GetComponent<NetworkSceneManagerDefault>()
-        });
-
-        if (!result.Ok)
-        {
-            Debug.LogError($"Failed to Start {mode}: {result.ShutdownReason}");
+            if (Input.GetKeyDown(KeyCode.Space))
+            {
+                DealRequested = true;
+            }
         }
     }
 
     private void OnGUI()
     {
-        if (GUI.Button(new Rect(10, 10, 200, 40), "Start Host"))
+        if (NetworkRunner.Instances.Count < 2)
         {
-            StartGame(GameMode.Host);
+            _windowRect = GUILayout.Window(0, _windowRect, DrawConnectionWindow, "Network Setup");
         }
-        if (GUI.Button(new Rect(10, 60, 200, 40), "Start Client"))
+    }
+
+    private void DrawConnectionWindow(int windowID)
+    {
+        if (GUILayout.Button("Start Host", GUILayout.Height(40))) StartGame(GameMode.Host);
+        if (GUILayout.Button("Start Client", GUILayout.Height(40))) StartGame(GameMode.Client);
+    }
+
+    async void StartGame(GameMode mode)
+    {
+        Debug.Log($"[Global] Starting {mode}...");
+        GameObject runnerObj = new GameObject("Runner_" + mode);
+        _localRunner = runnerObj.AddComponent<NetworkRunner>();
+        _localRunner.ProvideInput = true;
+        var sceneManager = runnerObj.AddComponent<NetworkSceneManagerDefault>();
+        _localRunner.AddCallbacks(this);
+
+        var result = await _localRunner.StartGame(new StartGameArgs()
         {
-            StartGame(GameMode.Client);
+            GameMode = mode,
+            SessionName = "PokerTestRoom",
+            CustomLobbyName = "DegenRxLobby",
+            Scene = SceneRef.FromIndex(0),
+            SceneManager = sceneManager
+        });
+
+        if (result.Ok)
+        {
+            Debug.Log($"[Global] {mode} started successfully.");
+        }
+        else
+        {
+            Debug.LogError($"[Global] Failed to start {mode}: {result.ShutdownReason}");
         }
     }
 
@@ -63,31 +87,27 @@ public class GlobalManager : MonoBehaviour, INetworkRunnerCallbacks
     {
         if (runner.IsServer)
         {
-            Vector3 spawnPosition = new Vector3(player.RawEncoded * 3, 1, 0);
-            runner.Spawn(playerPrefab, spawnPosition, Quaternion.identity, player);
-        }
-
-        // Fixed Fusion 2.0.2 logic: Compare PlayerId instead of the PlayerRef struct
-        if (Camera.main != null)
-        {
-            var listener = Camera.main.GetComponent<AudioListener>();
-            if (listener != null)
+            // Only the Host spawns the singleton NetworkLogic (Deck)
+            if (player == runner.LocalPlayer && NetworkLogicPrefab != null)
             {
-                // Only the first local runner (Host) keeps the AudioListener enabled
-                listener.enabled = (runner.LocalPlayer.PlayerId == 0);
+                runner.Spawn(NetworkLogicPrefab, Vector3.zero, Quaternion.identity);
             }
+
+            Vector3 spawnPos = new Vector3(player.RawEncoded % 2 == 0 ? -3 : 1, 1, 0);
+            runner.Spawn(PlayerPrefab, spawnPos, Quaternion.identity, player);
         }
     }
 
     public void OnInput(NetworkRunner runner, NetworkInput input)
     {
-        var data = new NetworkInputData();
-        data.direction.x = Input.GetAxisRaw("Horizontal");
-        data.direction.y = Input.GetAxisRaw("Vertical");
-        input.Set(data);
+        var myInput = new NetworkInputData();
+        if (Input.GetKey(KeyCode.W)) myInput.direction += Vector3.forward;
+        if (Input.GetKey(KeyCode.S)) myInput.direction += Vector3.back;
+        if (Input.GetKey(KeyCode.A)) myInput.direction += Vector3.left;
+        if (Input.GetKey(KeyCode.D)) myInput.direction += Vector3.right;
+        input.Set(myInput);
     }
 
-    // Standard Fusion 2.0.2 Signatures
     public void OnPlayerLeft(NetworkRunner runner, PlayerRef player) { }
     public void OnInputMissing(NetworkRunner runner, PlayerRef player, NetworkInput input) { }
     public void OnShutdown(NetworkRunner runner, ShutdownReason shutdownReason) { }
