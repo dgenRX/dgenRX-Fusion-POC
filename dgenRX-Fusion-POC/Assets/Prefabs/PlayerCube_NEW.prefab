@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 183767833591362560}
   - component: {fileID: 4316071782261554653}
   - component: {fileID: 8853834929101333402}
-  - component: {fileID: 5536245886157719967}
+  - component: {fileID: 5233953922297238301}
   m_Layer: 0
   m_Name: PlayerCube_NEW
   m_TagString: Untagged
@@ -53,7 +53,7 @@ MonoBehaviour:
   NestedObjects: []
   NetworkedBehaviours:
   - {fileID: 8853834929101333402}
-  - {fileID: 5536245886157719967}
+  - {fileID: 5233953922297238301}
   ForceRemoteRenderTimeframe: 0
 --- !u!114 &8853834929101333402
 MonoBehaviour:
@@ -72,7 +72,7 @@ MonoBehaviour:
   SyncParent: 0
   _autoAOIOverride: 1
   DisableSharedModeInterpolation: 0
---- !u!114 &5536245886157719967
+--- !u!114 &5233953922297238301
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -81,13 +81,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 1295366194008842109}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fef0f23d63d9bad4cb685cb1ba76ea1c, type: 3}
+  m_Script: {fileID: 11500000, guid: 5fe572893ada77042bd4533b626f514e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _moveSpeed: 5
+  _Chips: 1000
+  _CurrentBet: 0
+  _IsFolded: 0
   _Card1: -1
   _Card2: -1
-  _label: {fileID: 4317788025555602888}
 --- !u!1 &1938027601974557216
 GameObject:
   m_ObjectHideFlags: 0
@@ -211,7 +212,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &4139106684083551420
 RectTransform:
   m_ObjectHideFlags: 0

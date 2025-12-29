@@ -7,7 +7,8 @@ using UnityEngine;
 public class GlobalManager : NetworkBehaviour, INetworkRunnerCallbacks
 {
     public GameObject PlayerPrefab;
-    public GameObject NetworkLogicPrefab; 
+    public GameObject NetworkLogicPrefab;
+    public GameObject PokerGameManagerPrefab; // New: Prefab for the poker game manager
     
     private NetworkRunner _localRunner;
     private Rect _windowRect = new Rect(20, 20, 300, 150);
@@ -87,10 +88,20 @@ public class GlobalManager : NetworkBehaviour, INetworkRunnerCallbacks
     {
         if (runner.IsServer)
         {
-            // Only the Host spawns the singleton NetworkLogic (Deck)
-            if (player == runner.LocalPlayer && NetworkLogicPrefab != null)
+            // Only the Host spawns the singleton NetworkLogic (Deck) and PokerGameManager
+            if (player == runner.LocalPlayer)
             {
-                runner.Spawn(NetworkLogicPrefab, Vector3.zero, Quaternion.identity);
+                if (NetworkLogicPrefab != null)
+                {
+                    runner.Spawn(NetworkLogicPrefab, Vector3.zero, Quaternion.identity);
+                }
+                
+                // Spawn the PokerGameManager (only once, by the Host)
+                if (PokerGameManagerPrefab != null)
+                {
+                    runner.Spawn(PokerGameManagerPrefab, Vector3.zero, Quaternion.identity);
+                    Debug.Log("[GlobalManager] PokerGameManager spawned");
+                }
             }
 
             Vector3 spawnPos = new Vector3(player.RawEncoded % 2 == 0 ? -3 : 1, 1, 0);
@@ -126,3 +137,4 @@ public class GlobalManager : NetworkBehaviour, INetworkRunnerCallbacks
     public void OnReliableDataReceived(NetworkRunner runner, PlayerRef player, ReliableKey key, ArraySegment<byte> data) { }
     public void OnReliableDataProgress(NetworkRunner runner, PlayerRef player, ReliableKey key, float progress) { }
 }
+

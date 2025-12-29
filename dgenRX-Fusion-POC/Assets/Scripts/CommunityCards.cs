@@ -16,7 +16,7 @@ public class CommunityCards : NetworkBehaviour
     {
         if (_communityLabel != null)
         {
-            _communityLabel.text = "Waiting for game...";
+            _communityLabel.text = "";
         }
     }
 
@@ -33,7 +33,7 @@ public class CommunityCards : NetworkBehaviour
         // Display "Waiting" only if no cards have been dealt yet
         if (Flop1 == -1)
         {
-            _communityLabel.text = "Waiting for deal...";
+            _communityLabel.text = "";
             return;
         }
 
