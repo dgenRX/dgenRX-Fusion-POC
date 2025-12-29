@@ -81,3 +81,4 @@ Once text is visible:
 
 **The most likely issue: Text elements are not assigned to PokerTableUI script in Inspector.**
 
+

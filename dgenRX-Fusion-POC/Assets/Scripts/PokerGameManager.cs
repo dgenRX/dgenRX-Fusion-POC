@@ -23,10 +23,13 @@ public class PokerGameManager : NetworkBehaviour
 
     [Networked] public GameState CurrentState { get; private set; }
     [Networked] public int CurrentPlayerIndex { get; private set; } = -1;
+    [Networked] public PlayerRef CurrentPlayerRef { get; private set; } // Networked player reference for current turn
+    [Networked] public PlayerRef WinnerRef { get; private set; } // Networked reference to the winner of the current hand
     [Networked] public int Pot { get; private set; } = 0;
     [Networked] public int CurrentBet { get; private set; } = 0; // Highest bet this round
-    [Networked] public int SmallBlind { get; private set; } = 10;
-    [Networked] public int BigBlind { get; private set; } = 20;
+    [Networked] public int SmallBlind { get; private set; } = 1;
+    [Networked] public int BigBlind { get; private set; } = 3;
+    [Networked] public int BlindPosition { get; private set; } = 0; // Tracks which player posts small blind (rotates each hand)
 
     // List of all players in the game (we'll populate this when players join)
     // Using a simple list - we'll find players dynamically, no need to network this
@@ -91,6 +94,19 @@ public class PokerGameManager : NetworkBehaviour
     }
 
     /// <summary>
+    /// Checks if it's the given player's turn. Can be called from clients.
+    /// Uses the networked CurrentPlayerRef for reliable client-side checking.
+    /// </summary>
+    public bool IsPlayerTurn(PokerPlayer player)
+    {
+        if (player == null || CurrentPlayerRef == PlayerRef.None)
+            return false;
+        
+        // Compare the networked current player reference with this player's reference
+        return player.Object.InputAuthority == CurrentPlayerRef;
+    }
+
+    /// <summary>
     /// Starts a new poker hand. Deals cards, posts blinds, begins pre-flop betting.
     /// </summary>
     public void StartNewHand()
@@ -103,15 +119,22 @@ public class PokerGameManager : NetworkBehaviour
         // Reset pot and bets
         Pot = 0;
         CurrentBet = 0;
+        WinnerRef = PlayerRef.None; // Clear previous winner
 
         // Post blinds (small blind and big blind)
-        // For simplicity, first player posts small blind, second posts big blind
+        // Rotate blinds each hand - BlindPosition tracks who posts small blind
         if (_players.Count >= 2)
         {
-            _players[0].PostBlind(SmallBlind);
-            _players[1].PostBlind(BigBlind);
+            int smallBlindIndex = BlindPosition % _players.Count;
+            int bigBlindIndex = (BlindPosition + 1) % _players.Count;
+            
+            _players[smallBlindIndex].PostBlind(SmallBlind);
+            _players[bigBlindIndex].PostBlind(BigBlind);
             CurrentBet = BigBlind;
             Pot = SmallBlind + BigBlind;
+            
+            // Rotate blinds for next hand
+            BlindPosition = (BlindPosition + 1) % _players.Count;
         }
 
         // Deal hole cards to each player
@@ -137,6 +160,10 @@ public class PokerGameManager : NetworkBehaviour
         // Start pre-flop betting round
         CurrentState = GameState.PreFlop;
         CurrentPlayerIndex = 2 % _players.Count; // Start with player after big blind
+        if (CurrentPlayerIndex >= 0 && CurrentPlayerIndex < _players.Count)
+        {
+            CurrentPlayerRef = _players[CurrentPlayerIndex].Object.InputAuthority;
+        }
         Debug.Log($"[PokerGameManager] Pre-flop betting started. Current player: {CurrentPlayerIndex}");
     }
 
@@ -162,7 +189,20 @@ public class PokerGameManager : NetworkBehaviour
             }
         }
 
-        if (actingPlayer == null || playerIndex != CurrentPlayerIndex) return;
+        if (actingPlayer == null)
+        {
+            Debug.LogWarning($"[PokerGameManager] Acting player not found for PlayerRef {playerRef}");
+            return;
+        }
+        
+        // Check if it's this player's turn using the networked reference
+        if (actingPlayer.Object.InputAuthority != CurrentPlayerRef)
+        {
+            Debug.LogWarning($"[PokerGameManager] Not player's turn. Current: {CurrentPlayerRef}, Acting: {actingPlayer.Object.InputAuthority}");
+            return;
+        }
+
+        Debug.Log($"[PokerGameManager] Processing {action} from player {playerIndex} (PlayerRef: {playerRef})");
 
         // Process the action
         switch (action)
@@ -193,9 +233,11 @@ public class PokerGameManager : NetworkBehaviour
 
             case PokerPlayer.PlayerAction.Bet:
             case PokerPlayer.PlayerAction.Raise:
-                if (betAmount <= CurrentBet)
+                // Minimum raise must be at least the big blind amount more than current bet
+                int minRaise = CurrentBet + BigBlind;
+                if (betAmount < minRaise)
                 {
-                    Debug.LogWarning("[PokerGameManager] Bet amount must be higher than current bet");
+                    Debug.LogWarning($"[PokerGameManager] Bet amount {betAmount} must be at least {minRaise} (current bet {CurrentBet} + big blind {BigBlind})");
                     return;
                 }
                 int raiseAmount = betAmount - actingPlayer.CurrentBet;
@@ -222,6 +264,12 @@ public class PokerGameManager : NetworkBehaviour
             CurrentPlayerIndex = (CurrentPlayerIndex + 1) % _players.Count;
             attempts++;
         } while (_players[CurrentPlayerIndex].IsFolded && attempts < _players.Count);
+        
+        // Update the networked player reference
+        if (CurrentPlayerIndex >= 0 && CurrentPlayerIndex < _players.Count)
+        {
+            CurrentPlayerRef = _players[CurrentPlayerIndex].Object.InputAuthority;
+        }
 
         // Check if betting round is complete (all players have matched the bet or folded)
         bool bettingRoundComplete = true;
@@ -249,10 +297,14 @@ public class PokerGameManager : NetworkBehaviour
         if (activePlayers == 1 && winner != null)
         {
             // Single winner - award pot
-            winner.AddChips(Pot);
+            int potAmount = Pot;
+            winner.AddChips(potAmount);
+            WinnerRef = winner.Object.InputAuthority; // Set winner for UI display
             Pot = 0;
-            Debug.Log($"[PokerGameManager] Player won by default (others folded). Awarded {Pot} chips");
-            ResetForNextHand();
+            Debug.Log($"[PokerGameManager] Player {winner.Object.InputAuthority} won by default (others folded). Awarded {potAmount} chips");
+            
+            // Wait a moment before starting next hand so players can see "You Win!" message
+            StartCoroutine(DelayedResetForNextHand());
             return;
         }
 
@@ -287,6 +339,10 @@ public class PokerGameManager : NetworkBehaviour
                 }
                 CurrentState = GameState.Flop;
                 CurrentPlayerIndex = 0; // Start with first player
+                if (CurrentPlayerIndex >= 0 && CurrentPlayerIndex < _players.Count)
+                {
+                    CurrentPlayerRef = _players[CurrentPlayerIndex].Object.InputAuthority;
+                }
                 Debug.Log("[PokerGameManager] Flop dealt");
                 break;
 
@@ -298,6 +354,10 @@ public class PokerGameManager : NetworkBehaviour
                 }
                 CurrentState = GameState.Turn;
                 CurrentPlayerIndex = 0;
+                if (CurrentPlayerIndex >= 0 && CurrentPlayerIndex < _players.Count)
+                {
+                    CurrentPlayerRef = _players[CurrentPlayerIndex].Object.InputAuthority;
+                }
                 Debug.Log("[PokerGameManager] Turn dealt");
                 break;
 
@@ -309,6 +369,10 @@ public class PokerGameManager : NetworkBehaviour
                 }
                 CurrentState = GameState.River;
                 CurrentPlayerIndex = 0;
+                if (CurrentPlayerIndex >= 0 && CurrentPlayerIndex < _players.Count)
+                {
+                    CurrentPlayerRef = _players[CurrentPlayerIndex].Object.InputAuthority;
+                }
                 Debug.Log("[PokerGameManager] River dealt");
                 break;
 
@@ -374,9 +438,17 @@ public class PokerGameManager : NetworkBehaviour
     /// <summary>
     /// Resets the game state for the next hand.
     /// </summary>
+    private System.Collections.IEnumerator DelayedResetForNextHand()
+    {
+        // Wait 3 seconds so players can see "You Win!" message
+        yield return new WaitForSeconds(3f);
+        ResetForNextHand();
+    }
+
     private void ResetForNextHand()
     {
         CurrentState = GameState.HandComplete;
+        WinnerRef = PlayerRef.None; // Clear winner
         
         // Reset all players
         foreach (var player in _players)

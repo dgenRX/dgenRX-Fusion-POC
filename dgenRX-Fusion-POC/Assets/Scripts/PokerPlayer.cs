@@ -167,9 +167,14 @@ public class PokerPlayer : NetworkBehaviour
     [Rpc(RpcSources.InputAuthority, RpcTargets.StateAuthority)]
     private void RPC_PlayerAction(PlayerAction action, int betAmount)
     {
+        Debug.Log($"[PokerPlayer] RPC_PlayerAction received: {action}, betAmount: {betAmount}");
         if (_gameManager != null)
         {
             _gameManager.ProcessPlayerAction(Object.InputAuthority, action, betAmount);
+        }
+        else
+        {
+            Debug.LogError("[PokerPlayer] RPC_PlayerAction: GameManager is null!");
         }
     }
 
