@@ -182,8 +182,6 @@ MonoBehaviour:
   m_Script: {fileID: -1199893898, guid: e725a070cec140c4caffb81624c8c787, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-<<<<<<< Updated upstream
-=======
   SortKey: 1778693505
   ObjectInterest: 1
   Flags: 262145
@@ -1154,7 +1152,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 641927028}
   m_CullTransparentMesh: 1
->>>>>>> Stashed changes
 --- !u!1 &705507993
 GameObject:
   m_ObjectHideFlags: 0
@@ -1340,12 +1337,6 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-=======
-=======
->>>>>>> Stashed changes
   m_LocalEulerAnglesHint: {x: 20, y: 0, z: 0}
 --- !u!1 &1028068157
 GameObject:
@@ -3267,15 +3258,8 @@ SceneRoots:
   m_Roots:
   - {fileID: 963194228}
   - {fileID: 705507995}
-<<<<<<< Updated upstream
-  - {fileID: 365853419}
-=======
   - {fileID: 87380318}
   - {fileID: 254835376}
   - {fileID: 110042816}
   - {fileID: 873102835}
   - {fileID: 1379349545}
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
