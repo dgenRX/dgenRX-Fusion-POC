@@ -48,7 +48,6 @@ public class PokerGameManager : NetworkBehaviour
         if (Object.HasStateAuthority)
         {
             CurrentState = GameState.WaitingForPlayers;
-            Debug.Log("[PokerGameManager] Spawned and waiting for players...");
             
             // Check for existing players that might have spawned before us
             StartCoroutine(CheckForExistingPlayers());
@@ -86,7 +85,6 @@ public class PokerGameManager : NetworkBehaviour
 
         // Add player to list
         _players.Add(player);
-        Debug.Log($"[PokerGameManager] Player {player.Object.InputAuthority} registered. Total players: {_players.Count}");
         
         // If we have 2+ players, start the game
         if (_players.Count >= 2 && CurrentState == GameState.WaitingForPlayers)
@@ -116,7 +114,6 @@ public class PokerGameManager : NetworkBehaviour
         if (!Object.HasStateAuthority) return;
         if (_players.Count < 2) return;
 
-        Debug.Log("[PokerGameManager] Starting new hand...");
 
         // Reset pot and bets
         Pot = 0;
@@ -155,7 +152,6 @@ public class PokerGameManager : NetworkBehaviour
         {
             int card1 = _deck.GetNextCard();
             int card2 = _deck.GetNextCard();
-            Debug.Log($"[PokerGameManager] Dealing cards to player: {card1}, {card2}");
             player.DealHoleCards(card1, card2);
         }
 
@@ -168,7 +164,6 @@ public class PokerGameManager : NetworkBehaviour
         }
         LastRaiserIndex = 1; // Big blind is the last "raiser" initially (they posted the big blind)
         _playersActedThisRound.Clear(); // Reset action tracking for new betting round
-        Debug.Log($"[PokerGameManager] Pre-flop betting started. Current player: {CurrentPlayerIndex}, Last raiser: {LastRaiserIndex}");
     }
 
     /// <summary>
@@ -206,15 +201,11 @@ public class PokerGameManager : NetworkBehaviour
             return;
         }
 
-        Debug.Log($"[PokerGameManager] Processing {action} from player {playerIndex} (PlayerRef: {playerRef})");
-
         // Process the action
         switch (action)
         {
             case PokerPlayer.PlayerAction.Fold:
                 actingPlayer.Fold();
-                Debug.Log($"[PokerGameManager] Player {playerIndex} folded");
-                // Mark as acted - will be done after switch
                 break;
 
             case PokerPlayer.PlayerAction.Check:
@@ -223,8 +214,6 @@ public class PokerGameManager : NetworkBehaviour
                     Debug.LogWarning("[PokerGameManager] Cannot check - must call or fold");
                     return;
                 }
-                Debug.Log($"[PokerGameManager] Player {playerIndex} checked");
-                // Mark as acted - will be done after switch
                 break;
 
             case PokerPlayer.PlayerAction.Call:
@@ -234,8 +223,6 @@ public class PokerGameManager : NetworkBehaviour
                     actingPlayer.Bet(callAmount);
                     Pot += callAmount;
                 }
-                Debug.Log($"[PokerGameManager] Player {playerIndex} called {callAmount}");
-                // Mark as acted - will be done after switch
                 break;
 
             case PokerPlayer.PlayerAction.Bet:
@@ -252,7 +239,6 @@ public class PokerGameManager : NetworkBehaviour
                 Pot += raiseAmount;
                 CurrentBet = betAmount;
                 LastRaiserIndex = playerIndex; // Track who raised
-                Debug.Log($"[PokerGameManager] Player {playerIndex} bet/raised to {betAmount}. Last raiser: {LastRaiserIndex}");
                 break;
         }
 
@@ -281,7 +267,6 @@ public class PokerGameManager : NetworkBehaviour
                 if (playerIndex == LastRaiserIndex)
                 {
                     bettingRoundComplete = true;
-                    Debug.Log($"[PokerGameManager] Betting round complete - returned to last raiser (player {LastRaiserIndex})");
                 }
             }
             else
@@ -304,7 +289,6 @@ public class PokerGameManager : NetworkBehaviour
                 if (actedPlayerCount == activePlayerCount)
                 {
                     bettingRoundComplete = true;
-                    Debug.Log($"[PokerGameManager] Betting round complete - all players have acted ({actedPlayerCount}/{activePlayerCount})");
                 }
             }
         }
@@ -358,7 +342,6 @@ public class PokerGameManager : NetworkBehaviour
             winner.AddChips(potAmount);
             WinnerRef = winner.Object.InputAuthority; // Set winner for UI display
             Pot = 0;
-            Debug.Log($"[PokerGameManager] Player {winner.Object.InputAuthority} won by default (others folded). Awarded {potAmount} chips");
             
             // Wait a moment before starting next hand so players can see "You Win!" message
             StartCoroutine(DelayedResetForNextHand());
@@ -396,7 +379,6 @@ public class PokerGameManager : NetworkBehaviour
                 {
                     CurrentPlayerRef = _players[CurrentPlayerIndex].Object.InputAuthority;
                 }
-                Debug.Log("[PokerGameManager] Flop dealt");
                 break;
 
             case GameState.Flop:
@@ -411,7 +393,6 @@ public class PokerGameManager : NetworkBehaviour
                 {
                     CurrentPlayerRef = _players[CurrentPlayerIndex].Object.InputAuthority;
                 }
-                Debug.Log("[PokerGameManager] Turn dealt");
                 break;
 
             case GameState.Turn:
@@ -426,7 +407,6 @@ public class PokerGameManager : NetworkBehaviour
                 {
                     CurrentPlayerRef = _players[CurrentPlayerIndex].Object.InputAuthority;
                 }
-                Debug.Log("[PokerGameManager] River dealt");
                 break;
 
             case GameState.River:
@@ -480,8 +460,9 @@ public class PokerGameManager : NetworkBehaviour
         }
 
         // Award pot to winner
-        winner.AddChips(Pot);
-        Debug.Log($"[PokerGameManager] Showdown complete. Winner awarded {Pot} chips. Hand: {bestRank}");
+        int potAmount = Pot;
+        winner.AddChips(potAmount);
+        WinnerRef = winner.Object.InputAuthority; // Set winner for UI display
         Pot = 0;
 
         // Reset for next hand after a delay

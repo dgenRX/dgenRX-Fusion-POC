@@ -22,7 +22,7 @@ public class UITextStyle
     public Vector2 size = new Vector2(200, 30);
     
     [Tooltip("Text alignment")]
-    public TMPro.TextAlignmentOptions alignment = TMPro.TextAlignmentOptions.Left;
+    public TextAlignmentOptions alignment = TextAlignmentOptions.Left;
 }
 
 /// <summary>
@@ -71,13 +71,12 @@ public class PokerTableUI : MonoBehaviour
     public UITextStyle yourCardsTextStyle = new UITextStyle { fontSize = 24, color = Color.white, anchorPosition = new Vector2(0.1f, 0.65f), size = new Vector2(300, 30) };
     
     [Tooltip("Style settings for Turn Indicator Text")]
-    public UITextStyle turnIndicatorTextStyle = new UITextStyle { fontSize = 32, color = Color.green, anchorPosition = new Vector2(0.5f, 0.85f), size = new Vector2(300, 40), alignment = TMPro.TextAlignmentOptions.Center };
+    public UITextStyle turnIndicatorTextStyle = new UITextStyle { fontSize = 32, color = Color.green, anchorPosition = new Vector2(0.5f, 0.85f), size = new Vector2(300, 40), alignment = TextAlignmentOptions.Center };
 
     private PokerGameManager _gameManager;
     private PokerPlayer _localPlayer;
     private NetworkRunner _runner;
     private bool _wasMyTurn = false; // Track turn changes to set default value only once
-    private bool _hasLoggedDiagnostics = false; // Track if we've logged diagnostic info
 
     private void Start()
     {
@@ -109,7 +108,6 @@ public class PokerTableUI : MonoBehaviour
         if (betSlider != null)
         {
             betSlider.gameObject.SetActive(false);
-            Debug.Log("[PokerTableUI] Bet slider hidden");
         }
 
         // Setup betting input field
@@ -139,11 +137,8 @@ public class PokerTableUI : MonoBehaviour
                     rectTransform.anchorMax = Vector2.one;
                     rectTransform.offsetMin = new Vector2(5, 5); // Left, Bottom padding
                     rectTransform.offsetMax = new Vector2(-5, -5); // Right, Top padding
-                    Debug.Log("[PokerTableUI] Fixed Text Area positioning to fill input field");
                 }
             }
-            
-            Debug.Log($"[PokerTableUI] Bet input field set up. Position: {betInputField.transform.position}, Active: {betInputField.gameObject.activeSelf}");
         }
         else
         {
@@ -183,7 +178,6 @@ public class PokerTableUI : MonoBehaviour
             if (canvas.renderMode != RenderMode.ScreenSpaceOverlay)
             {
                 canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-                Debug.Log("[PokerTableUI] Changed Canvas to ScreenSpaceOverlay mode");
             }
 
             // Check for Canvas Group that might be blocking visibility
@@ -194,8 +188,6 @@ public class PokerTableUI : MonoBehaviour
                 canvasGroup.interactable = true;
                 canvasGroup.blocksRaycasts = true;
             }
-            
-            Debug.Log($"[PokerTableUI] Canvas found: {canvas.name}, Active: {canvas.gameObject.activeSelf}, Enabled: {canvas.enabled}");
         }
         else
         {
@@ -249,13 +241,6 @@ public class PokerTableUI : MonoBehaviour
         {
             // Hide state text completely - players don't need to see this
             gameStateText.text = "";
-        }
-        else
-        {
-            if (Time.frameCount < 10)
-            {
-                Debug.LogWarning("[PokerTableUI] gameStateText is null!");
-            }
         }
 
         // Update pot - text created in Start(), just update value
@@ -338,9 +323,6 @@ public class PokerTableUI : MonoBehaviour
     private void UpdateButtonStates()
     {
         if (_localPlayer == null || _gameManager == null) return;
-        
-        // Additional safety check
-        if (_gameManager == null) return;
 
         // Use the same turn check as the turn indicator (uses CurrentPlayerRef)
         bool isMyTurn = _gameManager.IsPlayerTurn(_localPlayer);
@@ -378,7 +360,6 @@ public class PokerTableUI : MonoBehaviour
                 }
                 
                 betInputField.text = defaultValue.ToString();
-                Debug.Log($"[PokerTableUI] Turn changed - Set default bet value to {defaultValue} (CurrentBet: {_gameManager.CurrentBet}, BigBlind: {_gameManager.BigBlind}, SmallBlind: {_gameManager.SmallBlind})");
             }
             
             // Update turn tracking
@@ -449,7 +430,6 @@ public class PokerTableUI : MonoBehaviour
                     betAmount = maxBet;
                 }
                 
-                Debug.Log($"[PokerTableUI] Betting {betAmount} (input was: {inputText})");
                 _localPlayer.MakeAction(PokerPlayer.PlayerAction.Bet, betAmount);
             }
             else
@@ -484,7 +464,6 @@ public class PokerTableUI : MonoBehaviour
                     betAmount = maxBet;
                 }
                 
-                Debug.Log($"[PokerTableUI] Raising to {betAmount} (input was: {inputText}, current bet: {_gameManager.CurrentBet})");
                 _localPlayer.MakeAction(PokerPlayer.PlayerAction.Raise, betAmount);
             }
             else
@@ -507,114 +486,6 @@ public class PokerTableUI : MonoBehaviour
         // This prevents conflicts between slider and input field
     }
 
-    /// <summary>
-    /// Checks and logs diagnostic info for a text element.
-    /// </summary>
-    private void CheckTextElement(TextMeshProUGUI textElement, string name, Canvas canvas)
-    {
-        if (textElement != null)
-        {
-            RectTransform rect = textElement.GetComponent<RectTransform>();
-            if (rect != null)
-            {
-                string canvasName = canvas != null ? canvas.name : "NO CANVAS";
-                Vector2 screenPos = canvas != null && canvas.worldCamera != null 
-                    ? RectTransformUtility.WorldToScreenPoint(canvas.worldCamera, rect.position)
-                    : Vector2.zero;
-                
-                Debug.Log($"[PokerTableUI] {name} - Active: {textElement.gameObject.activeSelf}, " +
-                         $"Enabled: {textElement.enabled}, Color Alpha: {textElement.color.a}, " +
-                         $"Position: {rect.position}, Size: {rect.sizeDelta}, " +
-                         $"AnchoredPos: {rect.anchoredPosition}, ScreenPos: {screenPos}, " +
-                         $"Canvas: {canvasName}, Text: '{textElement.text}'");
-            }
-        }
-        else
-        {
-            Debug.LogWarning($"[PokerTableUI] {name} is NULL!");
-        }
-    }
-
-    /// <summary>
-    /// Ensures a text element is visible and active.
-    /// </summary>
-    private void EnsureTextVisibility(TextMeshProUGUI textElement, string name)
-    {
-        if (textElement != null)
-        {
-            // Ensure GameObject is active
-            if (!textElement.gameObject.activeSelf)
-            {
-                textElement.gameObject.SetActive(true);
-                Debug.Log($"[PokerTableUI] Activated {name} GameObject");
-            }
-            
-            // Ensure text is visible (color alpha > 0)
-            if (textElement.color.a < 0.1f)
-            {
-                var color = textElement.color;
-                color.a = 1f; // Full opacity
-                textElement.color = color;
-                Debug.Log($"[PokerTableUI] Fixed {name} color alpha to 1.0");
-            }
-            
-            // Ensure text component is enabled
-            if (!textElement.enabled)
-            {
-                textElement.enabled = true;
-                Debug.Log($"[PokerTableUI] Enabled {name} component");
-            }
-
-            // Force text to be visible - ensure it has valid size and position
-            RectTransform rect = textElement.GetComponent<RectTransform>();
-            if (rect != null)
-            {
-                // Ensure rect has valid size (not zero)
-                if (rect.sizeDelta.x < 1 || rect.sizeDelta.y < 1)
-                {
-                    rect.sizeDelta = new Vector2(Mathf.Max(rect.sizeDelta.x, 100), Mathf.Max(rect.sizeDelta.y, 30));
-                    Debug.Log($"[PokerTableUI] Fixed {name} size to {rect.sizeDelta}");
-                }
-
-                // Ensure parent is active
-                if (rect.parent != null && !rect.parent.gameObject.activeSelf)
-                {
-                    rect.parent.gameObject.SetActive(true);
-                    Debug.Log($"[PokerTableUI] Activated {name} parent");
-                }
-
-                // Force text color to be visible (not white on white or transparent)
-                if (textElement.color.r > 0.9f && textElement.color.g > 0.9f && textElement.color.b > 0.9f)
-                {
-                    // Text is very light/white - change to dark for visibility
-                    textElement.color = new Color(0f, 0f, 0f, 1f); // Black text
-                    Debug.Log($"[PokerTableUI] Changed {name} color to black for visibility");
-                }
-                else if (textElement.color.a < 0.5f)
-                {
-                    // Text is too transparent
-                    var color = textElement.color;
-                    color.a = 1f;
-                    textElement.color = color;
-                    Debug.Log($"[PokerTableUI] Fixed {name} alpha to 1.0");
-                }
-
-                // Ensure text is in front (set sibling index to last)
-                rect.SetAsLastSibling();
-            }
-
-            // Force enable the CanvasRenderer (critical for visibility)
-            CanvasRenderer canvasRenderer = textElement.GetComponent<CanvasRenderer>();
-            if (canvasRenderer != null)
-            {
-                canvasRenderer.cull = false; // Don't cull this element
-            }
-        }
-        else
-        {
-            Debug.LogWarning($"[PokerTableUI] {name} is NULL! Make sure it's assigned in Inspector.");
-        }
-    }
 
     /// <summary>
     /// Creates a text element programmatically using Inspector-configured style settings.
@@ -638,7 +509,6 @@ public class PokerTableUI : MonoBehaviour
         Transform existing = canvas.transform.Find(name);
         if (existing != null)
         {
-            Debug.Log($"[PokerTableUI] {name} already exists, reusing it");
             return existing.GetComponent<TextMeshProUGUI>();
         }
         
@@ -646,7 +516,7 @@ public class PokerTableUI : MonoBehaviour
         GameObject textObj = new GameObject(name);
         textObj.transform.SetParent(canvas.transform, false);
         
-        TextMeshProUGUI text = textObj.AddComponent<TMPro.TextMeshProUGUI>();
+        TextMeshProUGUI text = textObj.AddComponent<TextMeshProUGUI>();
         text.text = initialText;
         
         // Apply Inspector-configured style (or use defaults if not set)
@@ -670,8 +540,6 @@ public class PokerTableUI : MonoBehaviour
         {
             canvasRenderer.cull = false;
         }
-        
-        Debug.Log($"[PokerTableUI] Created {name} with style - FontSize: {style.fontSize}, Color: {style.color}, Anchor: {style.anchorPosition}, Size: {style.size}");
         
         return text;
     }
@@ -698,7 +566,6 @@ public class PokerTableUI : MonoBehaviour
                 Transform oldElement = canvas.transform.Find(oldName);
                 if (oldElement != null)
                 {
-                    Debug.Log($"[PokerTableUI] Removing old scene element: {oldName}");
                     Destroy(oldElement.gameObject);
                 }
             }
@@ -720,8 +587,6 @@ public class PokerTableUI : MonoBehaviour
         gameStateText = CreateTextElement("GameStateText_Dynamic", "State: Waiting...", gameStateTextStyle);
         yourCardsText = CreateTextElement("YourCardsText_Dynamic", "", yourCardsTextStyle);
         turnIndicatorText = CreateTextElement("TurnIndicatorText_Dynamic", "", turnIndicatorTextStyle);
-        
-        Debug.Log($"[PokerTableUI] Created all text elements with Inspector styles - Pot: {potText != null}, Bet: {currentBetText != null}, Chips: {yourChipsText != null}, State: {gameStateText != null}, Cards: {yourCardsText != null}, Turn: {turnIndicatorText != null}");
     }
 
     /// <summary>
@@ -744,30 +609,11 @@ public class PokerTableUI : MonoBehaviour
         if (betInputField == null) { Debug.LogWarning("[PokerTableUI] betInputField is NOT assigned in Inspector!"); allAssigned = false; }
         if (betAmountText == null) { Debug.LogWarning("[PokerTableUI] betAmountText is NOT assigned in Inspector! (This is OK if you're not using it)"); }
         
-        if (allAssigned)
-        {
-            Debug.Log("[PokerTableUI] ✓ All required UI elements are assigned correctly!");
-        }
-        else
+        if (!allAssigned)
         {
             Debug.LogError("[PokerTableUI] ✗ Some required UI elements are missing! Check the warnings above and assign them in the Inspector.");
         }
     }
 
-    /// <summary>
-    /// Converts a card ID (0-51) to a human-readable name.
-    /// </summary>
-    private string GetCardName(int cardID)
-    {
-        if (cardID < 0 || cardID > 51) return "???";
-
-        string[] suits = { "♠", "♥", "♦", "♣" };
-        string[] ranks = { "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A" };
-
-        int suitIndex = cardID / 13;
-        int rankIndex = cardID % 13;
-
-        return $"{ranks[rankIndex]}{suits[suitIndex]}";
-    }
 }
 

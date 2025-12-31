@@ -89,3 +89,4 @@ Assets/Resources/CardAssets/playing card images/
 - `PokerTableUI` and `CommunityCards` now hide text automatically
 - If you see text, those scripts may need to be updated (already done in this refactor)
 
+

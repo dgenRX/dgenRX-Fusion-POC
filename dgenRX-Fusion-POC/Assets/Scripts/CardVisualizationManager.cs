@@ -83,8 +83,6 @@ public class CardVisualizationManager : MonoBehaviour
         {
             Debug.LogWarning($"[CardVisualizationManager] cardSize is very small ({cardSize}). Cards may be tiny! Recommended: (2.0, 2.8) or larger.");
         }
-        
-        Debug.Log($"[CardVisualizationManager] Start() called. Sprites loaded: {_spritesLoaded}, cardSize: {cardSize}, Instance ID: {GetInstanceID()}");
     }
 
     /// <summary>
@@ -162,10 +160,6 @@ public class CardVisualizationManager : MonoBehaviour
             {
                 if (player.Object != null && player.Object.HasInputAuthority)
                 {
-                    if (_localPlayer != player) // Only log when player changes
-                    {
-                        Debug.Log($"[CardVisualizationManager] Found local player {player.Object.InputAuthority} (Cards: {player.Card1}, {player.Card2})");
-                    }
                     _localPlayer = player;
                     _allPlayers[player.Object.InputAuthority] = player;
                     break;
@@ -252,11 +246,6 @@ public class CardVisualizationManager : MonoBehaviour
     {
         if (_localPlayer == null)
         {
-            // DIAGNOSTIC: Log why we're skipping (only once per frame to avoid spam)
-            if (Time.frameCount % 60 == 0) // Log once per second
-            {
-                Debug.Log($"[CardVisualizationManager] UpdatePlayerCards: _localPlayer is null. Runner: {_runner != null}, Sprites: {_spritesLoaded}");
-            }
             return;
         }
         
@@ -296,13 +285,10 @@ public class CardVisualizationManager : MonoBehaviour
             // Use Inspector values directly (no auto-fix)
             List<GameObject> playerCards = CreateCardRow(cards, localPlayerCardsPosition, true);
             _playerCardObjects[playerRef].AddRange(playerCards);
-            
-            Debug.Log($"[CardVisualizationManager] Created {playerCards.Count} cards (IDs: {currentCard1}, {currentCard2}) at positions spaced {cardSpacing:F2} units apart");
 
             // Update tracking
             _lastPlayerCards[playerRef] = (currentCard1, currentCard2);
         }
-        // Removed unchanged logging - too verbose
     }
 
     /// <summary>
@@ -398,10 +384,7 @@ public class CardVisualizationManager : MonoBehaviour
         {
             Debug.LogError($"[CardVisualizationManager] Sprite loading failed! Loaded {loadedCount}/52 cards, Back: {_cardBackSprite != null}. Check Resources/{texturesFolderPath}/");
         }
-        else
-        {
-            Debug.Log($"[CardVisualizationManager] ✓ Sprites loaded successfully: {loadedCount}/52 cards + back. Ready to render cards.");
-        }
+        // Only log errors, not success (reduces console noise)
     }
     
     /// <summary>
@@ -572,7 +555,5 @@ public class CardVisualizationManager : MonoBehaviour
         // Clear sprite cache (sprites will be garbage collected)
         _cardSprites.Clear();
         _cardBackSprite = null;
-        
-        Debug.Log("[CardVisualizationManager] Cleaned up on destroy");
     }
 }

@@ -4,42 +4,24 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class GlobalManager : NetworkBehaviour, INetworkRunnerCallbacks
+/// <summary>
+/// Global manager for network setup. Creates NetworkRunner and handles player spawning.
+/// This is a MonoBehaviour (not NetworkBehaviour) because it creates the runner itself.
+/// </summary>
+public class GlobalManager : MonoBehaviour, INetworkRunnerCallbacks
 {
     public GameObject PlayerPrefab;
     public GameObject NetworkLogicPrefab;
-    public GameObject PokerGameManagerPrefab; // New: Prefab for the poker game manager
+    public GameObject PokerGameManagerPrefab;
     
     private NetworkRunner _localRunner;
     private Rect _windowRect = new Rect(20, 20, 300, 150);
 
-    [Networked] public bool DealRequested { get; set; }
-
-    // Called by a UI Button in the scene
+    // Called by a UI Button in the scene (DealButton - may be obsolete now that game auto-starts)
     public void OnDealButtonClicked()
     {
-        if (_localRunner == null) return;
-        RPC_RequestDeal();
-    }
-
-    [Rpc(RpcSources.All, RpcTargets.StateAuthority)]
-    public void RPC_RequestDeal()
-    {
-        // This is executed on the Host when any client (or the host) calls it
-        Debug.Log("[Global] Deal Request Received by Host via RPC.");
-        DealRequested = true;
-    }
-
-    private void Update()
-    {
-        // Local input check for the Host only as a shortcut
-        if (Object != null && Object.HasStateAuthority)
-        {
-            if (Input.GetKeyDown(KeyCode.Space))
-            {
-                DealRequested = true;
-            }
-        }
+        // Game now auto-starts when 2 players join, so this button may not be needed
+        // Keeping for backwards compatibility with scene setup
     }
 
     private void OnGUI()
@@ -58,7 +40,6 @@ public class GlobalManager : NetworkBehaviour, INetworkRunnerCallbacks
 
     async void StartGame(GameMode mode)
     {
-        Debug.Log($"[Global] Starting {mode}...");
         GameObject runnerObj = new GameObject("Runner_" + mode);
         _localRunner = runnerObj.AddComponent<NetworkRunner>();
         _localRunner.ProvideInput = true;
@@ -74,11 +55,7 @@ public class GlobalManager : NetworkBehaviour, INetworkRunnerCallbacks
             SceneManager = sceneManager
         });
 
-        if (result.Ok)
-        {
-            Debug.Log($"[Global] {mode} started successfully.");
-        }
-        else
+        if (!result.Ok)
         {
             Debug.LogError($"[Global] Failed to start {mode}: {result.ShutdownReason}");
         }
@@ -100,7 +77,6 @@ public class GlobalManager : NetworkBehaviour, INetworkRunnerCallbacks
                 if (PokerGameManagerPrefab != null)
                 {
                     runner.Spawn(PokerGameManagerPrefab, Vector3.zero, Quaternion.identity);
-                    Debug.Log("[GlobalManager] PokerGameManager spawned");
                 }
             }
 
@@ -112,12 +88,8 @@ public class GlobalManager : NetworkBehaviour, INetworkRunnerCallbacks
 
     public void OnInput(NetworkRunner runner, NetworkInput input)
     {
-        var myInput = new NetworkInputData();
-        if (Input.GetKey(KeyCode.W)) myInput.direction += Vector3.forward;
-        if (Input.GetKey(KeyCode.S)) myInput.direction += Vector3.back;
-        if (Input.GetKey(KeyCode.A)) myInput.direction += Vector3.left;
-        if (Input.GetKey(KeyCode.D)) myInput.direction += Vector3.right;
-        input.Set(myInput);
+        // Input handled by PlayerCubeMovement component on player prefab
+        // No need to duplicate input handling here
     }
 
     public void OnPlayerLeft(NetworkRunner runner, PlayerRef player) { }

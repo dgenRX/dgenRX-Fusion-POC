@@ -39,3 +39,4 @@ After changing, your Canvas Scaler should show:
 
 
 
+
