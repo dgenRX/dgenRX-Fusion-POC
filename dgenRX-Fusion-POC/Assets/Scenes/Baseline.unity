@@ -167,10 +167,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3d9cc3507bff1b44a97de62b64b5f479, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  PlayerPrefab: {fileID: 1295366194008842109, guid: 5ab141d94ace1d54982940ab278591b1, type: 3}
-  NetworkLogicPrefab: {fileID: 2131762440183756246, guid: 88e6cc35c8430fe459c2af69b6c2bbfe, type: 3}
-  PokerGameManagerPrefab: {fileID: 3967232210825914458, guid: 3531c4b75f2494948a78615b94ce438f, type: 3}
-  _DealRequested: 0
+  PlayerPrefab: {fileID: 7152904825852851385, guid: 3ec48f3fc7ae7c749852a508da490758, type: 3}
+  NetworkLogicPrefab: {fileID: 2131762440183756245, guid: 88e6cc35c8430fe459c2af69b6c2bbfe, type: 3}
+  PokerGameManagerPrefab: {fileID: 3967232210825914457, guid: 3531c4b75f2494948a78615b94ce438f, type: 3}
 --- !u!114 &87380320
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -187,8 +186,7 @@ MonoBehaviour:
   ObjectInterest: 1
   Flags: 262145
   NestedObjects: []
-  NetworkedBehaviours:
-  - {fileID: 87380319}
+  NetworkedBehaviours: []
   ForceRemoteRenderTimeframe: 0
 --- !u!1 &100898154
 GameObject:
@@ -2530,6 +2528,42 @@ MonoBehaviour:
   betSlider: {fileID: 1890696964}
   betAmountText: {fileID: 1531676482}
   betInputField: {fileID: 1619704859}
+  potTextStyle:
+    fontSize: 24
+    color: {r: 1, g: 1, b: 1, a: 1}
+    anchorPosition: {x: 0.15, y: 0.65}
+    size: {x: 200, y: 30}
+    alignment: 513
+  currentBetTextStyle:
+    fontSize: 24
+    color: {r: 1, g: 1, b: 1, a: 1}
+    anchorPosition: {x: 0.15, y: 0.7}
+    size: {x: 200, y: 30}
+    alignment: 513
+  yourChipsTextStyle:
+    fontSize: 24
+    color: {r: 1, g: 1, b: 1, a: 1}
+    anchorPosition: {x: 0.1, y: 0.7}
+    size: {x: 200, y: 30}
+    alignment: 513
+  gameStateTextStyle:
+    fontSize: 24
+    color: {r: 1, g: 1, b: 1, a: 1}
+    anchorPosition: {x: 0.5, y: 0.95}
+    size: {x: 300, y: 30}
+    alignment: 513
+  yourCardsTextStyle:
+    fontSize: 24
+    color: {r: 1, g: 1, b: 1, a: 1}
+    anchorPosition: {x: 0.1, y: 0.65}
+    size: {x: 300, y: 30}
+    alignment: 513
+  turnIndicatorTextStyle:
+    fontSize: 32
+    color: {r: 0, g: 1, b: 0, a: 1}
+    anchorPosition: {x: 0.5, y: 0.85}
+    size: {x: 300, y: 40}
+    alignment: 514
 --- !u!4 &1433936836
 Transform:
   m_ObjectHideFlags: 0
@@ -4262,7 +4296,6 @@ MonoBehaviour:
   _Flop3: -1
   _Turn: -1
   _River: -1
-  _communityLabel: {fileID: 2145605555}
 --- !u!114 &2145605558
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4282,6 +4315,59 @@ MonoBehaviour:
   NetworkedBehaviours:
   - {fileID: 2145605557}
   ForceRemoteRenderTimeframe: 0
+--- !u!1 &2500000000
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2500000001}
+  - component: {fileID: 2500000002}
+  m_Layer: 0
+  m_Name: CardVisualizationManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2500000001
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2500000000}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2500000002
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2500000000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a2823c3fd722a924a8c718137d77e5b0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  texturesFolderPath: CardAssets/playing card images
+  cardSize: {x: 2, y: 2.8}
+  cropWhiteBorder: {x: 50, y: 50}
+  cardSpacing: 2.5
+  cardHeight: 1.5
+  communityCardsPosition: {x: 0, y: 1.5, z: 0}
+  localPlayerCardsPosition: {x: -0.3, y: 1.5, z: -0.3}
+  faceUpRotation: {x: 0, y: 0, z: 0}
+  faceDownRotation: {x: 0, y: 180, z: 0}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -4292,3 +4378,4 @@ SceneRoots:
   - {fileID: 254835376}
   - {fileID: 110042816}
   - {fileID: 873102835}
+  - {fileID: 2500000001}

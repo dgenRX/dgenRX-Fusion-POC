@@ -14,6 +14,7 @@ GameObject:
   - component: {fileID: 2286734460369814516}
   - component: {fileID: 4905365921185996634}
   - component: {fileID: -1634135183479937948}
+  - component: {fileID: 2500000003}
   m_Layer: 0
   m_Name: PlayerCube
   m_TagString: Untagged
@@ -125,7 +126,20 @@ MonoBehaviour:
   NestedObjects: []
   NetworkedBehaviours:
   - {fileID: -1634135183479937948}
+  - {fileID: 2500000003}
   ForceRemoteRenderTimeframe: 0
+--- !u!114 &2500000003
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7152904825852851385}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 899c7031bc8fa1841b037a3c91e37fcd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!114 &-1634135183479937948
 MonoBehaviour:
   m_ObjectHideFlags: 0

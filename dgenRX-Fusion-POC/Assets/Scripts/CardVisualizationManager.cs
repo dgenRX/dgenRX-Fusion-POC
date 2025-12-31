@@ -162,7 +162,23 @@ public class CardVisualizationManager : MonoBehaviour
                 {
                     _localPlayer = player;
                     _allPlayers[player.Object.InputAuthority] = player;
+                    Debug.Log($"[CardVisualizationManager] Found local player: {player.Object.InputAuthority}");
                     break;
+                }
+            }
+            
+            // If still not found, try finding by NetworkRunner.LocalPlayer
+            if (_localPlayer == null && _runner.LocalPlayer != PlayerRef.None)
+            {
+                foreach (var player in players)
+                {
+                    if (player.Object != null && player.Object.InputAuthority == _runner.LocalPlayer)
+                    {
+                        _localPlayer = player;
+                        _allPlayers[player.Object.InputAuthority] = player;
+                        Debug.Log($"[CardVisualizationManager] Found local player via LocalPlayer: {_runner.LocalPlayer}");
+                        break;
+                    }
                 }
             }
         }
@@ -241,53 +257,129 @@ public class CardVisualizationManager : MonoBehaviour
 
     /// <summary>
     /// Updates player hole cards visualization.
+    /// TEXAS HOLD'EM RULE: Only show the LOCAL player's hole cards (face up).
+    /// Other players' hole cards are NOT shown at all (completely hidden).
     /// </summary>
     private void UpdatePlayerCards()
     {
-        if (_localPlayer == null)
+        if (_runner == null)
         {
+            if (Time.frameCount % 120 == 0) // Log every 2 seconds
+            {
+                Debug.LogWarning("[CardVisualizationManager] UpdatePlayerCards: Runner is null!");
+            }
             return;
         }
         
-        // CRITICAL: Networked properties can only be accessed after Spawned() is called
-        if (_localPlayer.Object == null || !_localPlayer.Object.IsValid)
+        // Find ALL players to identify which one is local
+        PokerPlayer[] allPlayers = FindObjectsByType<PokerPlayer>(FindObjectsSortMode.None);
+        
+        if (allPlayers.Length == 0)
         {
-            return; // Not spawned yet, skip this update
+            if (Time.frameCount % 120 == 0)
+            {
+                Debug.LogWarning("[CardVisualizationManager] No PokerPlayer instances found!");
+            }
+            return;
         }
-
-        // Check if local player cards changed
-        int currentCard1 = _localPlayer.Card1;
-        int currentCard2 = _localPlayer.Card2;
         
+        // Find the LOCAL player (the one this client controls)
+        PokerPlayer localPlayer = null;
+        foreach (var player in allPlayers)
+        {
+            if (player.Object == null || !player.Object.IsValid) continue;
+            
+            PlayerRef playerRef = player.Object.InputAuthority;
+            bool isRunnerLocalPlayer = (_runner.LocalPlayer != PlayerRef.None && playerRef == _runner.LocalPlayer);
+            bool hasInputAuth = player.Object.HasInputAuthority;
+            
+            if (isRunnerLocalPlayer || hasInputAuth)
+            {
+                localPlayer = player;
+                break;
+            }
+        }
         
-        PlayerRef playerRef = _localPlayer.Object.InputAuthority;
-        bool hasLastState = _lastPlayerCards.ContainsKey(playerRef);
+        // TEXAS HOLD'EM RULE: Only show LOCAL player's hole cards
+        // Other players' cards are completely hidden (not shown at all)
+        if (localPlayer == null)
+        {
+            // No local player found yet - clear any existing cards
+            foreach (var kvp in _playerCardObjects.ToList())
+            {
+                DestroyCards(_playerCardObjects[kvp.Key]);
+                _playerCardObjects[kvp.Key].Clear();
+            }
+            _lastPlayerCards.Clear();
+            return;
+        }
+        
+        PlayerRef localPlayerRef = localPlayer.Object.InputAuthority;
+        int currentCard1 = localPlayer.Card1;
+        int currentCard2 = localPlayer.Card2;
+        
+        // Only show cards if they're valid (>= 0)
+        if (currentCard1 < 0 || currentCard2 < 0)
+        {
+            // Cards not dealt yet - clear any existing cards
+            if (_playerCardObjects.ContainsKey(localPlayerRef))
+            {
+                DestroyCards(_playerCardObjects[localPlayerRef]);
+                _playerCardObjects[localPlayerRef].Clear();
+            }
+            _lastPlayerCards.Remove(localPlayerRef);
+            return;
+        }
+        
+        // Check if cards changed
+        bool hasLastState = _lastPlayerCards.ContainsKey(localPlayerRef);
         bool changed = !hasLastState || 
-                      _lastPlayerCards[playerRef].card1 != currentCard1 || 
-                      _lastPlayerCards[playerRef].card2 != currentCard2;
+                      _lastPlayerCards[localPlayerRef].card1 != currentCard1 || 
+                      _lastPlayerCards[localPlayerRef].card2 != currentCard2;
 
         if (changed)
         {
             // Destroy old cards FIRST to prevent duplicates
-            if (_playerCardObjects.ContainsKey(playerRef))
+            if (_playerCardObjects.ContainsKey(localPlayerRef))
             {
-                DestroyCards(_playerCardObjects[playerRef]);
-                _playerCardObjects[playerRef].Clear();
+                DestroyCards(_playerCardObjects[localPlayerRef]);
+                _playerCardObjects[localPlayerRef].Clear();
             }
             else
             {
-                _playerCardObjects[playerRef] = new List<GameObject>();
+                _playerCardObjects[localPlayerRef] = new List<GameObject>();
+            }
+            
+            // Also remove any cards from other players (they shouldn't be shown)
+            // TEXAS HOLD'EM: Other players' hole cards are completely hidden
+            var keysToRemove = _playerCardObjects.Keys.Where(k => k != localPlayerRef).ToList();
+            foreach (var key in keysToRemove)
+            {
+                DestroyCards(_playerCardObjects[key]);
+                _playerCardObjects[key].Clear();
+                _playerCardObjects.Remove(key);
+            }
+            
+            // Also remove tracking for other players
+            var cardsToRemove = _lastPlayerCards.Keys.Where(k => k != localPlayerRef).ToList();
+            foreach (var key in cardsToRemove)
+            {
+                _lastPlayerCards.Remove(key);
             }
 
-            // Create new local player cards (face up - you can see your own cards)
+            // Create LOCAL player's cards - ALWAYS face up (only they can see them)
             int[] cards = { currentCard1, currentCard2 };
+            Vector3 cardPosition = localPlayerCardsPosition;
             
-            // Use Inspector values directly (no auto-fix)
-            List<GameObject> playerCards = CreateCardRow(cards, localPlayerCardsPosition, true);
-            _playerCardObjects[playerRef].AddRange(playerCards);
+            Debug.Log($"[CardVisualizationManager] Creating LOCAL player's hole cards (Player {localPlayerRef}) at {cardPosition}, Card1={currentCard1}, Card2={currentCard2}, FaceUp=True");
+            
+            List<GameObject> playerCards = CreateCardRow(cards, cardPosition, true); // Always face up for local player
+            _playerCardObjects[localPlayerRef].AddRange(playerCards);
+            
+            Debug.Log($"[CardVisualizationManager] Created {playerCards.Count} hole card GameObjects for LOCAL player {localPlayerRef}");
 
             // Update tracking
-            _lastPlayerCards[playerRef] = (currentCard1, currentCard2);
+            _lastPlayerCards[localPlayerRef] = (currentCard1, currentCard2);
         }
     }
 
@@ -384,7 +476,10 @@ public class CardVisualizationManager : MonoBehaviour
         {
             Debug.LogError($"[CardVisualizationManager] Sprite loading failed! Loaded {loadedCount}/52 cards, Back: {_cardBackSprite != null}. Check Resources/{texturesFolderPath}/");
         }
-        // Only log errors, not success (reduces console noise)
+        else
+        {
+            Debug.Log($"[CardVisualizationManager] Successfully loaded {loadedCount}/52 card sprites and back sprite");
+        }
     }
     
     /// <summary>
@@ -444,13 +539,15 @@ public class CardVisualizationManager : MonoBehaviour
 
         if (cardSprite == null)
         {
-            Debug.LogError($"[CardVisualizationManager] Card {cardID}: Sprite not found! FaceUp: {faceUp}");
+            Debug.LogError($"[CardVisualizationManager] Card {cardID}: Sprite not found! FaceUp: {faceUp}, SpritesLoaded: {_spritesLoaded}, SpriteCount: {_cardSprites.Count}");
             return null;
         }
 
         // Create GameObject with SpriteRenderer
         GameObject card = new GameObject(faceUp ? $"Card_{cardID}" : "Card_Back");
         card.transform.position = position;
+        
+        Debug.Log($"[CardVisualizationManager] Creating card {cardID} at position {position}, sprite: {cardSprite.name}");
         
         // Add SpriteRenderer component
         SpriteRenderer spriteRenderer = card.AddComponent<SpriteRenderer>();
@@ -471,10 +568,10 @@ public class CardVisualizationManager : MonoBehaviour
         // Use non-uniform scaling so X (width) and Y (height) can be adjusted independently
         card.transform.localScale = new Vector3(scaleX, scaleY, 1f);
         
-        // For 2D sprites in 3D space, position them flat on the table (facing up)
-        // Rotate 90 degrees on X axis to lay flat
-        // Flip Y rotation 180 degrees to fix mirror image issue
-        card.transform.rotation = Quaternion.Euler(90f, faceUp ? 180f : 0f, 0f);
+        // For 2D sprites in 3D space, make them stand upright facing the camera
+        // Cards should be vertical (standing up) not flat on the table
+        // Rotate to face camera: 0 degrees X (upright), 180 Y if face up (flip), 0 Z
+        card.transform.rotation = Quaternion.Euler(0f, faceUp ? 180f : 0f, 0f);
         
         // Apply any additional rotation from Inspector
         Vector3 additionalRotation = faceUp ? faceUpRotation : faceDownRotation;

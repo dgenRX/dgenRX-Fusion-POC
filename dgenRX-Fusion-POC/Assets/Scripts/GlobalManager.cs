@@ -81,8 +81,15 @@ public class GlobalManager : MonoBehaviour, INetworkRunnerCallbacks
             }
 
             // Spawn players at the edge of the plane (further from center)
-            Vector3 spawnPos = new Vector3(player.RawEncoded % 2 == 0 ? -5 : 5, 1, 0);
-            runner.Spawn(PlayerPrefab, spawnPos, Quaternion.identity, player);
+            if (PlayerPrefab != null)
+            {
+                Vector3 spawnPos = new Vector3(player.RawEncoded % 2 == 0 ? -5 : 5, 1, 0);
+                runner.Spawn(PlayerPrefab, spawnPos, Quaternion.identity, player);
+            }
+            else
+            {
+                Debug.LogError("[GlobalManager] PlayerPrefab is null! Cannot spawn player. Please assign PlayerPrefab in the Inspector.");
+            }
         }
     }
 
